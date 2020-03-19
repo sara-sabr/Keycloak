@@ -1,0 +1,37 @@
+version: '3.7'
+
+volumes:
+  postgres_data:
+      driver: local
+
+services:
+  postgres:
+      image: postgres:11
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      environment:
+        POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+        POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Please set password for database user 'keycloak'}
+  keycloak:
+      image: jboss/keycloak
+      environment:
+        DB_VENDOR: POSTGRES
+        DB_ADDR: postgres
+        DB_DATABASE: ${POSTGRES_DB:-keycloak}
+        DB_USER: ${POSTGRES_USER:-keycloak}
+        DB_SCHEMA: public
+        DB_PASSWORD: ${POSTGRES_PASSWORD:?Please set password for database user 'keycloak'}
+        KEYCLOAK_HTTPS_PORT: 443
+        KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
+        KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD?Please set password for 'keycloak' user}
+        PROXY_ADDRESS_FORWARDING: "true"
+        KEYCLOAK_HOSTNAME: ${KEYCLOAK_HOSTNAME?Please set the public facing URL}
+        KEYCLOAK_ALWAYS_HTTPS: "true"
+      volumes:
+        - ./certs/fullchain.pem:/etc/x509/https/tls.crt
+        - ./certs/privkey.pem:/etc/x509/https/tls.key
+      ports:
+        - 443:8443
+      depends_on:
+        - postgres
